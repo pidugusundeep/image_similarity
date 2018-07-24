@@ -3,6 +3,7 @@
 
 ## Links
 https://www.kaggle.com/kmader/image-similarity-with-siamese-networks
+https://github.com/sujitpal/holiday-similarity
 
 
 https://arxiv.org/abs/1503.03832
