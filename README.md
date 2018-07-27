@@ -24,4 +24,5 @@ https://www.linkedin.com/pulse/detection-duplicate-images-using-deep-learning-ad
 
 
 https://medium.com/@taylordenouden/installing-tensorflow-gpu-on-ubuntu-18-04-89a142325138
+
 https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-18-04-bionic-beaver-linux
