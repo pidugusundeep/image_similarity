@@ -21,3 +21,6 @@ https://medium.com/@akarshzingade/image-similarity-using-deep-ranking-c1bd838559
 https://users.eecs.northwestern.edu/~jwa368/pdfs/deep_ranking.pdf
 https://www.linkedin.com/pulse/using-deep-learning-fashion-similarity-face-vaibhav-gusain
 https://www.linkedin.com/pulse/detection-duplicate-images-using-deep-learning-aditya-sharma
+
+
+https://medium.com/@taylordenouden/installing-tensorflow-gpu-on-ubuntu-18-04-89a142325138
