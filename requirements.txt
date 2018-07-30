@@ -2,3 +2,5 @@ keras
 tensorflow-gpu
 matplotlib
 Pillow
+opencv-python
+sklearn
