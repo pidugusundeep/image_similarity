@@ -17,7 +17,7 @@ from scipy.misc import imresize
 RESIZE_WIDTH = 224
 RESIZE_HEIGHT = 224
 
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 NUM_EPOCHS = 10
 
 DATA_DIR = "data"
@@ -92,7 +92,7 @@ def load_image(image_name):
 
 def generate_image_triples_batch(image_triples, batch_size, shuffle=False):
     """ generator """
-    
+
     while True:
         # loop once per epoch
         if shuffle:
