@@ -44,7 +44,7 @@ def main():
 
     print(hash_data)
 
-    with open("image_hash.txt", "w") as file:
+    with open("generate/image_hash.txt", "w") as file:
         file.write(hash_data)
 
 

@@ -1,2 +1,6 @@
-data/holiday-photos/**
 .vscode/**
+
+
+data/holiday-photos/**
+generate/**
+!generate/.empty
