@@ -2,5 +2,5 @@
 
 
 data/holiday-photos/**
-generate/**
-!generate/.empty
+data/vectors.tsv
+data/model.h5
