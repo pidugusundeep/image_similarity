@@ -26,12 +26,10 @@ def main():
     img = cv2.resize(img, (224, 224))
     img = np.resize(img, (1, img.shape[0], img.shape[1], img.shape[2]))
 
-    base_model = ResNet50(weights='imagenet', pooling=max, include_top=False)
-    in_layer = Input(shape=(224, 224, 3), name='image_input')
-    net = base_model(in_layer)
-    net = Flatten()(net)
-    model = Model(inputs=in_layer, outputs=net)
-
+    base_model = ResNet50(weights='imagenet',  include_top=True)
+    model = Model(input=base_model.input,
+             output=base_model.get_layer("flatten_1").output)
+    
     img = preprocess_input(img)
 
     features = model.predict(img)
