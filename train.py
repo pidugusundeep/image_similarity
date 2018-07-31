@@ -169,12 +169,27 @@ def load_vectors(vector_file):
     return vec_dict
 
 
+
+def  cosine_distance (vecs, normalize=False):
+    """ cosine distance """
+    x, y = vecs
+    if normalize:
+        x = K.l2_normalize(x, axis=0)
+        y = K.l2_normalize(x, axis=0)
+    return K.prod(K.stack([x, y], axis=1), axis=1)
+
+def cosine_distance_output_shape(shapes):
+    """ shape """
+    return shapes[0]
+
 def get_siamese_model():
     """ get siamese  model """
 
     input_1 = Input(shape=(VECTOR_SIZE,))
     input_2 = Input(shape=(VECTOR_SIZE,))
-    merged = Concatenate(axis=-1)([input_1, input_2])
+    #merged = Concatenate(axis=-1)([input_1, input_2])
+    merged = Lambda(cosine_distance, 
+                  output_shape=cosine_distance_output_shape)([input_1, input_2])
 
     fc1 = Dense(512, kernel_initializer="glorot_uniform")(merged)
     fc1 = Dropout(0.2)(fc1)
