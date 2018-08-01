@@ -5,6 +5,7 @@ import json
 import sys
 import time
 import uuid
+import cv2
 
 import flask
 import numpy as np
@@ -16,7 +17,7 @@ db = redis.StrictRedis(host="localhost", port=6379, db=0)
 
 
 IMAGE_SIZE = 224
-IMAGE_QUEUE = "image"
+IMAGE_QUEUE_LIST = "image_queue"
 
 
 def base64_encode_image(image):
@@ -47,15 +48,27 @@ def search():
 
     data = {"queue": False}
 
-    # ensure an image was properly uploaded to our endpoint
     if flask.request.method == "POST":
         if flask.request.files.get("image"):
+            image_data = flask.request.files["image"].read()
 
-            image = flask.request.files["image"].read()
+            img_stream = io.BytesIO(image_data)
+
+            file_bytes = np.asarray(
+                bytearray(img_stream.read()), dtype=np.uint8)
+            image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+            image_height = image.shape[0]
+            image_width = image.shape[1]
+
+            #print(image_height, image_width)
+            print(image.dtype)
 
             id_image = str(uuid.uuid4())
-            d = {"id": id_image, "image": base64_encode_image(image)}
-            db.rpush(IMAGE_QUEUE, json.dumps(d))
+            d = {"id": id_image, "image": base64_encode_image(
+                image_data)}
+
+            db.lpush(IMAGE_QUEUE_LIST, json.dumps(d))
             data["queue"] = True
             data["id"] = id_image
 
@@ -63,10 +76,20 @@ def search():
     return flask.jsonify(data)
 
 
+@app.route("/result/<string:image_id>", methods=["GET"])
+def status(image_id):
+
+    data = db.get("result:"+image_id)
+
+    print(data)
+
+    return flask.jsonify({"ok"})
+
+
 def main():
     """ main """
 
-    app.run()
+    app.run(debug=True)
 
 
 if __name__ == "__main__":
