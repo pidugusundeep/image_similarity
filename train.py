@@ -26,7 +26,7 @@ VECTOR_SIZE = 2048
 
 BATCH_SIZE = 32
 
-NUM_EPOCHS = 20
+NUM_EPOCHS = 25
 
 
 def get_vgg19():
@@ -191,15 +191,15 @@ def get_siamese_model():
     merged = Lambda(cosine_distance, 
                   output_shape=cosine_distance_output_shape)([input_1, input_2])
 
-    fc1 = Dense(512, kernel_initializer="glorot_uniform")(merged)
-    fc1 = Dropout(0.2)(fc1)
+    fc1 = Dense(1024)(merged)
+    fc1 = Dropout(0.25)(fc1)
     fc1 = Activation("relu")(fc1)
 
-    fc2 = Dense(128, kernel_initializer="glorot_uniform")(fc1)
-    fc2 = Dropout(0.2)(fc2)
+    fc2 = Dense(512, )(fc1)
+    fc2 = Dropout(0.25)(fc2)
     fc2 = Activation("relu")(fc2)
 
-    pred = Dense(2, kernel_initializer="glorot_uniform")(fc2)
+    pred = Dense(2, )(fc2)
     pred = Activation("softmax")(pred)
 
     model = Model(inputs=[input_1, input_2], outputs=pred)
