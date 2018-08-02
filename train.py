@@ -20,7 +20,7 @@ IMAGE_DIR = os.path.join(DATA_DIR, "holiday-photos/image/jpg")
 
 VECTOR_FILE = os.path.join(DATA_DIR, "vectors.tsv")
 
-IMAGE_SIZE = 224
+IMAGE_SIZE = 299
 
 VECTOR_SIZE = 2048
 
@@ -62,7 +62,7 @@ def get_inception3():
         weights="imagenet", include_top=True)
 
     model = Model(inputs=inception_model.input,
-                  outputs=inception_model.get_layer("flatten").output)
+                  outputs=inception_model.get_layer("avg_pool").output)
 
     preprocessor = inception_v3.preprocess_input
 
@@ -169,8 +169,7 @@ def load_vectors(vector_file):
     return vec_dict
 
 
-
-def  cosine_distance (vecs, normalize=False):
+def cosine_distance(vecs, normalize=False):
     """ cosine distance """
     x, y = vecs
     if normalize:
@@ -178,9 +177,11 @@ def  cosine_distance (vecs, normalize=False):
         y = K.l2_normalize(x, axis=0)
     return K.prod(K.stack([x, y], axis=1), axis=1)
 
+
 def cosine_distance_output_shape(shapes):
     """ shape """
     return shapes[0]
+
 
 def get_siamese_model():
     """ get siamese  model """
@@ -188,15 +189,15 @@ def get_siamese_model():
     input_1 = Input(shape=(VECTOR_SIZE,))
     input_2 = Input(shape=(VECTOR_SIZE,))
     #merged = Concatenate(axis=-1)([input_1, input_2])
-    merged = Lambda(cosine_distance, 
-                  output_shape=cosine_distance_output_shape)([input_1, input_2])
+    merged = Lambda(cosine_distance,
+                    output_shape=cosine_distance_output_shape)([input_1, input_2])
 
-    fc1 = Dense(1024)(merged)
-    fc1 = Dropout(0.25)(fc1)
+    fc1 = Dense(512, kernel_initializer="glorot_uniform")(merged)
+    fc1 = Dropout(0.2)(fc1)
     fc1 = Activation("relu")(fc1)
 
-    fc2 = Dense(512, )(fc1)
-    fc2 = Dropout(0.25)(fc2)
+    fc2 = Dense(128, kernel_initializer="glorot_uniform")(fc1)
+    fc2 = Dropout(0.2)(fc2)
     fc2 = Activation("relu")(fc2)
 
     pred = Dense(2, )(fc2)
@@ -256,7 +257,7 @@ def main():
     print("Start training")
 
     #model, preprocessor = get_vgg19()
-    model, preprocessor = get_resnet50()
+    model, preprocessor = get_inception3()
 
     if not os.path.isfile(os.path.join(DATA_DIR, "vectors.tsv")):
         vectorize_features_images(
@@ -266,12 +267,17 @@ def main():
 
     triples = get_triples(IMAGE_DIR)
 
-    triples_train, triples_test = train_test_split(triples, test_size=0.2)
-    triples_train, triples_val = train_test_split(triples_train, test_size=0.1)
+    #print(triples)
+
+    #exit()
+
+
+    #triples_train, triples_test = train_test_split(triples, test_size=0.1)
+    triples_train, triples_val = train_test_split(triples, test_size=0.1)
 
     print("Train :{:d}".format(len(triples_train)))
     print("Validation :{:d}".format(len(triples_val)))
-    print("Test :{:d}".format(len(triples_test)))
+    #print("Test :{:d}".format(len(triples_test)))
 
     train_gen = data_generator(
         triples_train, VECTOR_SIZE, vec_dict, BATCH_SIZE)
@@ -287,9 +293,9 @@ def main():
     val_steps_per_epoch = len(triples_val) // BATCH_SIZE
 
     history = siamese_model.fit_generator(train_gen, steps_per_epoch=train_steps_per_epoch,
-                                  epochs=NUM_EPOCHS,
-                                  validation_data=val_gen, validation_steps=val_steps_per_epoch,
-                                  callbacks=[checkpoint])
+                                          epochs=NUM_EPOCHS,
+                                          validation_data=val_gen, validation_steps=val_steps_per_epoch,
+                                          callbacks=[checkpoint])
 
     plot_history(history)
 
