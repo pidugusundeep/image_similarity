@@ -1,0 +1,93 @@
+<script src="https://code.jquery.com/jquery-3.0.0-alpha1.js"></script>
+<html>
+
+
+
+<body>
+
+
+    <form id="ajax-upload" action="/search" method="post" enctype="multipart/form-data">
+        File:
+        <input type="file" id="image" name="image">
+        <button type="submit">Search!</button>
+    </form>
+    <br>
+    <div>
+        <img id="previewImage" src="#" alt="your image" width="256" height="256" />
+    </div>
+    <div>
+        <div id="result"></div>
+        <div id="resultImages"></div>
+    </div>
+</body>
+
+<script>
+
+
+    function readURL(input) {
+
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                $('#previewImage').attr('src', e.target.result);
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    $("#image").change(function () {
+        readURL(this);
+    });
+
+    var id = ""
+
+
+    $(document).ready(function () {
+        //based on: http://stackoverflow.com/a/9622978
+        $('#ajax-upload').on('submit', function (e) {
+
+            id = ""
+
+            e.preventDefault();
+            var form = e.target;
+            var data = new FormData(form);
+            $.ajax({
+                url: form.action,
+                method: form.method,
+                processData: false,
+                contentType: false,
+                data: data,
+                processData: false,
+                success: function (data) {
+                    $('#result').text(data["id"])
+
+                    id = data["id"]
+
+                    setInterval(function () {
+
+                        //$('#result').text(data["id"] + new Date())
+
+                        $.ajax({
+                            url: "/result/" + id,
+                            method: "get",
+                            success: function (data) {
+                                $('#resultImages').empty()
+
+                                data["images"].forEach(function (item) {
+                                    $('#resultImages').append('<img src="/result/images/' + item.name + '" width="256" height="256"  />:' + item.similarity)
+                                })
+
+                            }
+                        })
+
+                    }, 1000)
+                }
+            })
+        })
+    })
+
+</script>
+
+</html>

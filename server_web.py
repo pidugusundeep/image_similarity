@@ -2,11 +2,12 @@
 import base64
 import io
 import json
+import os
 import sys
 import time
 import uuid
-import cv2
 
+import cv2
 import flask
 import numpy as np
 import redis
@@ -41,6 +42,11 @@ def base64_decode_image(data, dtype, shape):
 
     # return the decoded image
     return image
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return app.send_static_file('index.html')
 
 
 @app.route("/search", methods=["POST"])
@@ -81,9 +87,19 @@ def status(image_id):
 
     data = db.get("result:"+image_id)
 
-    print(data)
+    if not data:
+        return flask.jsonify({})
 
-    return flask.jsonify({"ok"})
+    data = json.loads(data.decode("utf-8"))
+
+    return flask.jsonify(data)
+
+
+@app.route("/result/images/<path:file_name>", methods=["GET"])
+def image(file_name):
+
+    path_folder = os.path.join(app.root_path, "data/holiday-photos/image/jpg")
+    return flask.send_from_directory(directory=path_folder, filename=file_name)
 
 
 def main():

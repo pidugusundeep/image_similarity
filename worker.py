@@ -155,11 +155,11 @@ def main():
                 if image_count > 50:
                     result["images"] = list(similar_images)
                     db_redis.setex(
-                        "result:"+result["id"], 300, json.dumps(result))
+                        "result:"+result["id"], 60, json.dumps(result))
 
             result["images"] = list(similar_images)
             print(result)
-            db_redis.setex("result:"+result["id"], 300, json.dumps(result))
+            db_redis.setex("result:"+result["id"], 60, json.dumps(result))
 
 
 if __name__ == "__main__":
