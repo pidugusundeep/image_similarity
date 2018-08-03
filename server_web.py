@@ -105,7 +105,7 @@ def image(file_name):
 def main():
     """ main """
 
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
 
 
 if __name__ == "__main__":
