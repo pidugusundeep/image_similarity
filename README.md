@@ -29,6 +29,9 @@ https://medium.com/@taylordenouden/installing-tensorflow-gpu-on-ubuntu-18-04-89a
 
 https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-18-04-bionic-beaver-linux
 
+### Paper
+
+(Image forensic )[https://arxiv.org/pdf/1802.06515.pdf]
 
 ### Dataset
 https://sites.google.com/site/imagesimilaritydata/download
