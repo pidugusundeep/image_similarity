@@ -1,148 +1,181 @@
-""" train script """
+""" Train """
 
 import itertools
 import os
-from random import shuffle
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from keras import backend as K
+from keras.applications import inception_v3, resnet50, vgg19
+from keras.callbacks import ModelCheckpoint
 from keras.layers import Input
-from keras.layers.convolutional import Conv2D, MaxPooling2D
-from keras.layers.core import Activation, Dense, Dropout, Flatten, Lambda
-from keras.models import Model, Sequential
-from keras.utils import np_utils
-from scipy.misc import imresize
-
-RESIZE_WIDTH = 224
-RESIZE_HEIGHT = 224
-
-BATCH_SIZE = 32
-NUM_EPOCHS = 10
+from keras.layers.core import Activation, Dense, Dropout, Lambda
+from keras.layers.merge import Concatenate
+from keras.models import Model, load_model
+from sklearn.model_selection import train_test_split
 
 DATA_DIR = "data"
 IMAGE_DIR = os.path.join(DATA_DIR, "holiday-photos/image/jpg")
 
-IMAGE_CACHE = {}
+VECTOR_FILE = os.path.join(DATA_DIR, "vectors.tsv")
+
+IMAGE_SIZE = 299
+
+VECTOR_SIZE = 2048
+
+BATCH_SIZE = 32
+
+NUM_EPOCHS = 25
 
 
-def draw_image(subplot, image, title):
-    """ draw image in plot """
-    plt.subplot(subplot)
-    plt.imshow(image)
-    plt.title(title)
-    plt.xticks([])
-    plt.yticks([])
+def get_vgg19():
+    """ return vgg19 model and preprocessor """
+
+    vgg19_model = vgg19.VGG19(weights="imagenet", include_top=True)
+
+    model = Model(inputs=vgg19_model.input,
+                  outputs=vgg19_model.get_layer("fc2").output)
+
+    preprocessor = vgg19.preprocess_input
+
+    return model, preprocessor
 
 
-def get_random_image(img_groups, group_names, gid):
-    """ get random image """
+def get_resnet50():
+    """ return resnet50 model and preprocessor """
 
-    gname = group_names[gid]
-    photos = img_groups[gname]
-    pid = np.random.choice(np.arange(len(photos)), size=1)[0]
-    pname = photos[pid]
-    return gname + pname + ".jpg"
+    resnet_model = resnet50.ResNet50(weights="imagenet", include_top=True)
+
+    model = Model(inputs=resnet_model.input,
+                  outputs=resnet_model.get_layer("flatten_1").output)
+
+    preprocessor = resnet50.preprocess_input
+
+    return model, preprocessor
 
 
-def create_triples(image_dir):
-    """ create triples """
+def get_inception3():
+    """ return inception3 model and preprocessor """
 
-    img_groups = {}
+    inception_model = inception_v3.InceptionV3(
+        weights="imagenet", include_top=True)
 
-    for img_file in os.listdir(image_dir):
-        prefix, _ = img_file.split(".")
-        gid, pid = prefix[0:4], prefix[4:]
-        if gid in img_groups:
-            img_groups[gid].append(pid)
+    model = Model(inputs=inception_model.input,
+                  outputs=inception_model.get_layer("avg_pool").output)
+
+    preprocessor = inception_v3.preprocess_input
+
+    return model, preprocessor
+
+
+def image_batch_generator(image_names, batch_size):
+    """ generator for vector """
+
+    num_batches = len(image_names) // batch_size
+    for i in range(num_batches):
+        batch = image_names[i * batch_size: (i + 1) * batch_size]
+        yield batch
+
+    if len(image_names) % batch_size != 0:
+        batch = image_names[num_batches * batch_size:]
+        yield batch
+
+
+def vectorize_features_images(image_dir, image_size, preprocessor, model, vector_file, batch_size=32):
+    """ generate files for image features """
+
+    image_names = os.listdir(image_dir)
+
+    image_names.sort()
+
+    num_vectors = 0
+
+    with open(vector_file, "w") as file:
+        for image_batch in image_batch_generator(image_names, batch_size):
+            batch_images = []
+            for image_name in image_batch:
+                # print(image_name)
+                image = cv2.imread(os.path.join(IMAGE_DIR, image_name))
+                image = cv2.resize(image, (image_size, image_size))
+                batch_images.append(image)
+
+            x_data = preprocessor(np.array(batch_images, dtype="float32"))
+
+            # print(x_data.shape)
+            vectors = model.predict(x_data)
+            # print(vectors.shape)
+
+            for i in range(vectors.shape[0]):
+                if num_vectors % 100 == 0:
+                    print("{:d} vectors generated".format(num_vectors))
+
+                image_vector = ",".join(["{:.5e}".format(v)
+                                         for v in vectors[i].tolist()])
+                # print(image_vector)
+                file.write("{:s}\t{:s}\n".format(image_batch[i], image_vector))
+                num_vectors += 1
+
+        print("{:d} vectors generated".format(num_vectors))
+
+
+def get_triples(image_dir):
+    """ get trippler """
+    image_groups = {}
+    for image_name in os.listdir(image_dir):
+        base_name = image_name[0:-4]
+        group_name = base_name[0:4]
+        if group_name in image_groups:
+            image_groups[group_name].append(image_name)
         else:
-            img_groups[gid] = [pid]
-
-    pos_triples, neg_triples = [], []
-    # positive pairs are any combination of images in same group
-    for key in img_groups.keys():
-        triples = [(key + x[0] + ".jpg", key + x[1] + ".jpg", 1)
-                   for x in itertools.combinations(img_groups[key], 2)]
-        pos_triples.extend(triples)
-
-    # need equal number of negative examples
-    group_names = list(img_groups.keys())
-    for i in range(len(pos_triples)):
-        g1, g2 = np.random.choice(
-            np.arange(len(group_names)), size=2, replace=False)
-        left = get_random_image(img_groups, group_names, g1)
-        right = get_random_image(img_groups, group_names, g2)
-        neg_triples.append((left, right, 0))
-    pos_triples.extend(neg_triples)
-    shuffle(pos_triples)
-    return pos_triples
-
-
-def load_image(image_name):
-    """ load image """
-
-    if not image_name in IMAGE_CACHE:
-        image = plt.imread(os.path.join(
-            IMAGE_DIR, image_name)).astype(np.float32)
-        image = imresize(image, (224, 224))
-        image = np.divide(image, 256)
-        IMAGE_CACHE[image_name] = image
-    return IMAGE_CACHE[image_name]
+            image_groups[group_name] = [image_name]
+    num_sims = 0
+    image_triples = []
+    group_list = sorted(list(image_groups.keys()))
+    for i, group_name in enumerate(group_list):
+        if num_sims % 100 == 0:
+            print("Generated {:d} pos + {:d} neg = {:d} total image triples"
+                  .format(num_sims, num_sims, 2*num_sims))
+        images_in_group = image_groups[group_name]
+        sim_pairs_it = itertools.combinations(images_in_group, 2)
+        # for each similar pair, generate a corresponding different pair
+        for ref_image, sim_image in sim_pairs_it:
+            image_triples.append((ref_image, sim_image, 1))
+            num_sims += 1
+            while True:
+                j = np.random.randint(low=0, high=len(group_list), size=1)[0]
+                if j != i:
+                    break
+            dif_image_candidates = image_groups[group_list[j]]
+            k = np.random.randint(low=0, high=len(
+                dif_image_candidates), size=1)[0]
+            dif_image = dif_image_candidates[k]
+            image_triples.append((ref_image, dif_image, 0))
+    print("Generated {:d} pos + {:d} neg = {:d} total image triples"
+          .format(num_sims, num_sims, 2*num_sims))
+    return image_triples
 
 
-def generate_image_triples_batch(image_triples, batch_size, shuffle=False):
-    """ generator """
+def load_vectors(vector_file):
+    """ load features file """
 
-    while True:
-        # loop once per epoch
-        if shuffle:
-            indices = np.random.permutation(np.arange(len(image_triples)))
-        else:
-            indices = np.arange(len(image_triples))
-        shuffled_triples = [image_triples[ix] for ix in indices]
-        num_batches = len(shuffled_triples) // batch_size
-        for bid in range(num_batches):
-            # loop once per batch
-            images_left, images_right, labels = [], [], []
-            batch = shuffled_triples[bid * batch_size: (bid + 1) * batch_size]
-            for i in range(batch_size):
-                lhs, rhs, label = batch[i]
-                images_left.append(load_image(lhs))
-                images_right.append(load_image(rhs))
-                labels.append(label)
-            Xlhs = np.array(images_left)
-            Xrhs = np.array(images_right)
-            Y = np_utils.to_categorical(np.array(labels), num_classes=2)
-            yield ([Xlhs, Xrhs], Y)
+    vec_dict = {}
+    with open(vector_file, "r") as file:
+        for line in file:
+            image_name, image_vec = line.strip().split("\t")
+            vec = np.array([float(v) for v in image_vec.split(",")])
+            vec_dict[image_name] = vec
 
-
-def create_base_network(input_shape):
-    """ create base network for siamese networ """
-
-    seq = Sequential()
-    # CONV => RELU => POOL
-    seq.add(Conv2D(20, kernel_size=5, padding="same", input_shape=input_shape))
-    seq.add(Activation("relu"))
-    seq.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    # CONV => RELU => POOL
-    seq.add(Conv2D(50, kernel_size=5, padding="same"))
-    seq.add(Activation("relu"))
-    seq.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    # Flatten => RELU
-    seq.add(Flatten())
-    seq.add(Dense(500))
-
-    return seq
+    return vec_dict
 
 
 def cosine_distance(vecs, normalize=False):
-    """ distance """
-
-    x_data, y_data = vecs
+    """ cosine distance """
+    x, y = vecs
     if normalize:
-        x_data = K.l2_normalize(x_data, axis=0)
-        y_data = K.l2_normalize(x_data, axis=0)
-    return K.prod(K.stack([x_data, y_data], axis=1), axis=1)
+        x = K.l2_normalize(x, axis=0)
+        y = K.l2_normalize(x, axis=0)
+    return K.prod(K.stack([x, y], axis=1), axis=1)
 
 
 def cosine_distance_output_shape(shapes):
@@ -150,45 +183,60 @@ def cosine_distance_output_shape(shapes):
     return shapes[0]
 
 
-def compute_accuracy(preds, labels):
-    """ accuracy """
-    return labels[preds.ravel() < 0.5].mean()
+def get_siamese_model():
+    """ get siamese  model """
 
+    input_1 = Input(shape=(VECTOR_SIZE,))
+    input_2 = Input(shape=(VECTOR_SIZE,))
+    #merged = Concatenate(axis=-1)([input_1, input_2])
+    merged = Lambda(cosine_distance,
+                    output_shape=cosine_distance_output_shape)([input_1, input_2])
 
-def generate_model():
-    """ generate model.has_key(image_name) for siamese networ """
-
-    input_shape = (224, 224, 3)
-    base_network = create_base_network(input_shape)
-
-    image_left = Input(shape=input_shape)
-    image_right = Input(shape=input_shape)
-
-    vector_left = base_network(image_left)
-    vector_right = base_network(image_right)
-
-    distance = Lambda(cosine_distance,
-                      output_shape=cosine_distance_output_shape)([vector_left, vector_right])
-
-    # fc1 = Dense(512, kernel_initializer="glorot_uniform")(distance)
-    # fc1 = Dropout(0.2)(fc1)
-    # fc1 = Activation("relu")(fc1)
-
-    fc1 = Dense(128, kernel_initializer="glorot_uniform")(distance)
+    fc1 = Dense(512, kernel_initializer="glorot_uniform")(merged)
     fc1 = Dropout(0.2)(fc1)
     fc1 = Activation("relu")(fc1)
 
-    pred = Dense(2, kernel_initializer="glorot_uniform")(fc1)
+    fc2 = Dense(128, kernel_initializer="glorot_uniform")(fc1)
+    fc2 = Dropout(0.2)(fc2)
+    fc2 = Activation("relu")(fc2)
+
+    pred = Dense(2, )(fc2)
     pred = Activation("softmax")(pred)
 
-    model = Model(inputs=[image_left, image_right], outputs=pred)
+    model = Model(inputs=[input_1, input_2], outputs=pred)
 
     return model
 
 
+def batch_to_vectors(batch, vec_size, vec_dict):
+
+    X1 = np.zeros((len(batch), vec_size))
+    X2 = np.zeros((len(batch), vec_size))
+    Y = np.zeros((len(batch), 2))
+    for tid in range(len(batch)):
+        X1[tid] = vec_dict[batch[tid][0]]
+        X2[tid] = vec_dict[batch[tid][1]]
+        Y[tid] = [1, 0] if batch[tid][2] == 0 else [0, 1]
+    return ([X1, X2], Y)
+
+
+def data_generator(triples, vec_size, vec_dict, batch_size=32):
+    """ generator """
+
+    while True:
+        # shuffle once per batch
+        indices = np.random.permutation(np.arange(len(triples)))
+
+        num_batches = len(triples) // batch_size
+
+        for bid in range(num_batches):
+            batch_indices = indices[bid * batch_size: (bid + 1) * batch_size]
+            batch = [triples[i] for i in batch_indices]
+            yield batch_to_vectors(batch, vec_size, vec_dict)
+
+
 def plot_history(history):
     """ plot history """
-
     plt.subplot(211)
     plt.title("Loss")
     plt.plot(history.history["loss"], color="r", label="train")
@@ -201,40 +249,53 @@ def plot_history(history):
     plt.plot(history.history["val_acc"], color="b", label="validation")
     plt.legend(loc="best")
 
-    plt.tight_layout()
     plt.show()
 
 
 def main():
-    """main function"""
-    print("Train")
+    """ main """
+    print("Start training")
 
-    triples_data = create_triples(IMAGE_DIR)
+    #model, preprocessor = get_vgg19()
+    model, preprocessor = get_inception3()
 
-    print("# image triples:", len(triples_data))
+    if not os.path.isfile(os.path.join(DATA_DIR, "vectors.tsv")):
+        vectorize_features_images(
+            IMAGE_DIR, IMAGE_SIZE, preprocessor, model, VECTOR_FILE)
 
-    split_point = int(len(triples_data) * 0.7)
-    triples_train, triples_test = triples_data[0:
-                                               split_point], triples_data[split_point:]
+    vec_dict = load_vectors(VECTOR_FILE)
 
-    model = generate_model()
+    triples = get_triples(IMAGE_DIR)
 
-    model.compile(loss="categorical_crossentropy",
-                  optimizer="adam", metrics=["accuracy"])
+    #print(triples)
 
-    train_gen = generate_image_triples_batch(
-        triples_train, BATCH_SIZE, shuffle=True)
-    val_gen = generate_image_triples_batch(
-        triples_test, BATCH_SIZE, shuffle=False)
+    #exit()
 
-    num_train_steps = len(triples_train) // BATCH_SIZE
-    num_val_steps = len(triples_test) // BATCH_SIZE
 
-    history = model.fit_generator(train_gen,
-                                  steps_per_epoch=num_train_steps,
-                                  epochs=NUM_EPOCHS,
-                                  validation_data=val_gen,
-                                  validation_steps=num_val_steps)
+    #triples_train, triples_test = train_test_split(triples, test_size=0.1)
+    triples_train, triples_val = train_test_split(triples, test_size=0.1)
+
+    print("Train :{:d}".format(len(triples_train)))
+    print("Validation :{:d}".format(len(triples_val)))
+    #print("Test :{:d}".format(len(triples_test)))
+
+    train_gen = data_generator(
+        triples_train, VECTOR_SIZE, vec_dict, BATCH_SIZE)
+    val_gen = data_generator(triples_val, VECTOR_SIZE, vec_dict, BATCH_SIZE)
+
+    siamese_model = get_siamese_model()
+    siamese_model.compile(
+        optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+
+    checkpoint = ModelCheckpoint(os.path.join(
+        DATA_DIR, "model.h5"), save_best_only=True)
+    train_steps_per_epoch = len(triples_train) // BATCH_SIZE
+    val_steps_per_epoch = len(triples_val) // BATCH_SIZE
+
+    history = siamese_model.fit_generator(train_gen, steps_per_epoch=train_steps_per_epoch,
+                                          epochs=NUM_EPOCHS,
+                                          validation_data=val_gen, validation_steps=val_steps_per_epoch,
+                                          callbacks=[checkpoint])
 
     plot_history(history)
 

@@ -96,7 +96,7 @@ def vectorize_features_images(image_dir, image_size, preprocessor, model, vector
             batch_images = []
             for image_name in image_batch:
                 # print(image_name)
-                image = cv2.imread(os.path.join(IMAGE_DIR, image_name))
+                image = cv2.imread(os.path.join(image_dir, image_name))
                 image = cv2.resize(image, (image_size, image_size))
                 batch_images.append(image)
 
@@ -259,18 +259,33 @@ def main():
     #model, preprocessor = get_vgg19()
     model, preprocessor = get_inception3()
 
-    if not os.path.isfile(os.path.join(DATA_DIR, "vectors.tsv")):
+    image_dir = "/home/andrei/temp/validation"
+    image_similar_dir = "/home/andrei/temp/validation_similar"
+
+    image_vector_file = os.path.join(image_dir, "vectors.tsv")
+    print(image_vector_file)
+    if not os.path.isfile(image_vector_file):
+        
         vectorize_features_images(
-            IMAGE_DIR, IMAGE_SIZE, preprocessor, model, VECTOR_FILE)
+            image_dir, IMAGE_SIZE, preprocessor, model, image_vector_file)
+
+
+    image_similar_vector_file = os.path.join(image_similar_dir, "vectors.tsv")
+    print(image_similar_vector_file)
+    if not os.path.isfile(image_similar_vector_file):
+        
+        vectorize_features_images(
+            image_similar_dir, IMAGE_SIZE, preprocessor, model, image_similar_vector_file)
+
+    exit()
 
     vec_dict = load_vectors(VECTOR_FILE)
 
     triples = get_triples(IMAGE_DIR)
 
-    #print(triples)
+    # print(triples)
 
-    #exit()
-
+    # exit()
 
     #triples_train, triples_test = train_test_split(triples, test_size=0.1)
     triples_train, triples_val = train_test_split(triples, test_size=0.1)
