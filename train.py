@@ -2,6 +2,7 @@
 
 import itertools
 import os
+import time
 
 import cv2
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ VECTOR_SIZE = 2048
 
 BATCH_SIZE = 32
 
-NUM_EPOCHS = 25
+NUM_EPOCHS = 10
 
 
 def get_vgg19():
@@ -113,46 +114,41 @@ def vectorize_features_images(image_dir, image_size, preprocessor, model, vector
                 image_vector = ",".join(["{:.5e}".format(v)
                                          for v in vectors[i].tolist()])
                 # print(image_vector)
-                file.write("{:s}\t{:s}\n".format(image_batch[i], image_vector))
+                image_file_path = os.path.join(image_dir, image_batch[i])
+                file.write("{:s}\t{:s}\n".format(
+                    image_file_path, image_vector))
                 num_vectors += 1
 
         print("{:d} vectors generated".format(num_vectors))
 
 
-def get_triples(image_dir):
+def get_triples(image_dir, image_similar_dir):
     """ get trippler """
-    image_groups = {}
-    for image_name in os.listdir(image_dir):
-        base_name = image_name[0:-4]
-        group_name = base_name[0:4]
-        if group_name in image_groups:
-            image_groups[group_name].append(image_name)
-        else:
-            image_groups[group_name] = [image_name]
+
+    images_name_list = sorted(os.listdir(image_dir))
+
     num_sims = 0
     image_triples = []
-    group_list = sorted(list(image_groups.keys()))
-    for i, group_name in enumerate(group_list):
-        if num_sims % 100 == 0:
-            print("Generated {:d} pos + {:d} neg = {:d} total image triples"
-                  .format(num_sims, num_sims, 2*num_sims))
-        images_in_group = image_groups[group_name]
-        sim_pairs_it = itertools.combinations(images_in_group, 2)
-        # for each similar pair, generate a corresponding different pair
-        for ref_image, sim_image in sim_pairs_it:
-            image_triples.append((ref_image, sim_image, 1))
-            num_sims += 1
-            while True:
-                j = np.random.randint(low=0, high=len(group_list), size=1)[0]
-                if j != i:
-                    break
-            dif_image_candidates = image_groups[group_list[j]]
-            k = np.random.randint(low=0, high=len(
-                dif_image_candidates), size=1)[0]
-            dif_image = dif_image_candidates[k]
-            image_triples.append((ref_image, dif_image, 0))
+
+    for i, name in enumerate(images_name_list):
+        
+
+        image_file_path = os.path.join(image_dir, name)
+        image_similar_file_path = os.path.join(image_similar_dir, name)
+
+        image_triples.append((image_file_path, image_similar_file_path, 1))
+        while True:
+            j = np.random.randint(low=0, high=len(images_name_list), size=1)[0]
+            if j != i:
+                break
+
+        image_not_similar_file_path = os.path.join(
+            image_dir, images_name_list[j])
+        image_triples.append((image_file_path, image_not_similar_file_path, 0))
+
     print("Generated {:d} pos + {:d} neg = {:d} total image triples"
           .format(num_sims, num_sims, 2*num_sims))
+
     return image_triples
 
 
@@ -208,6 +204,7 @@ def get_siamese_model():
     return model
 
 
+# batch to vectorimage_batch[i]
 def batch_to_vectors(batch, vec_size, vec_dict):
 
     X1 = np.zeros((len(batch), vec_size))
@@ -262,41 +259,53 @@ def main():
     image_dir = "/home/andrei/temp/validation"
     image_similar_dir = "/home/andrei/temp/validation_similar"
 
-    image_vector_file = os.path.join(image_dir, "vectors.tsv")
+    image_vector_file = os.path.join("/home/andrei/temp/", "vectors.tsv")
     print(image_vector_file)
     if not os.path.isfile(image_vector_file):
-        
+
         vectorize_features_images(
             image_dir, IMAGE_SIZE, preprocessor, model, image_vector_file)
 
-
-    image_similar_vector_file = os.path.join(image_similar_dir, "vectors.tsv")
+    image_similar_vector_file = os.path.join(
+        "/home/andrei/temp/", "vectors_similar.tsv")
     print(image_similar_vector_file)
     if not os.path.isfile(image_similar_vector_file):
-        
+
         vectorize_features_images(
             image_similar_dir, IMAGE_SIZE, preprocessor, model, image_similar_vector_file)
 
-    exit()
+    print("Load vec file for image")
+    image_vec_dict = load_vectors(image_vector_file)
+    print("Load vec file for image similar")
+    image_similar_vec_dict = load_vectors(image_similar_vector_file)
 
-    vec_dict = load_vectors(VECTOR_FILE)
+    image_vec_dict.update(image_similar_vec_dict)
 
-    triples = get_triples(IMAGE_DIR)
+    print(len(image_vec_dict))
+    print(len(image_similar_vec_dict))
+    print("Done")
+    #print(image_vec_dict.keys())
+    
 
-    # print(triples)
+    triples = get_triples(image_dir, image_similar_dir)
 
-    # exit()
+    print(len(triples))
+
+    #exit()
+
+    # time.sleep(30)
 
     #triples_train, triples_test = train_test_split(triples, test_size=0.1)
-    triples_train, triples_val = train_test_split(triples, test_size=0.1)
+    triples_train, triples_val = train_test_split(triples, test_size=0.3)
 
     print("Train :{:d}".format(len(triples_train)))
     print("Validation :{:d}".format(len(triples_val)))
     #print("Test :{:d}".format(len(triples_test)))
 
     train_gen = data_generator(
-        triples_train, VECTOR_SIZE, vec_dict, BATCH_SIZE)
-    val_gen = data_generator(triples_val, VECTOR_SIZE, vec_dict, BATCH_SIZE)
+        triples_train, VECTOR_SIZE, image_vec_dict, BATCH_SIZE)
+    val_gen = data_generator(triples_val, VECTOR_SIZE,
+                             image_vec_dict, BATCH_SIZE)
 
     siamese_model = get_siamese_model()
     siamese_model.compile(
