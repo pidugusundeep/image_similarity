@@ -36,6 +36,7 @@ https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-18-04-bionic
 ### LSH
 
 https://www.quora.com/What-are-some-fast-similarity-search-algorithms-and-data-structures-for-high-dimensional-vectors
+https://towardsdatascience.com/fast-near-duplicate-image-search-using-locality-sensitive-hashing-d4c16058efcb
 
 
 ### Google Image
