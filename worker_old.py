@@ -3,14 +3,12 @@
 import base64
 import bisect
 import json
-import os
 import sys
 from collections import deque
 
 import cv2
 import numpy as np
 import redis
-from annoy import AnnoyIndex
 from keras.applications import inception_v3
 from keras.applications.resnet50 import ResNet50, preprocess_input
 from keras.models import Model, load_model
@@ -103,21 +101,8 @@ def main():
     #              outputs=base_model.get_layer("flatten_1").output)
     features_model, preprocessor = get_inception3()
 
-    print("Load model.", end="")
+    print("Load model.")
     model = load_model('data/model.h5')
-    print("Ok")
-    print("Load ann model.", end="")
-    index = AnnoyIndex(2048)
-    index.load("data/model.ann")
-    print("Ok")
-
-    print("Load index metadata.", end="")
-    image_names = os.listdir("/home/andrei/temp/validation")
-    image_names.sort()
-    images = []
-    for image_name in image_names:
-        images.append(image_name)
-    print("Ok.")
 
     db_redis = redis.StrictRedis(host="localhost", port=6379, db=0)
     while True:
@@ -135,24 +120,44 @@ def main():
                 features_model, preprocessor, data["image"])
 
             features = np.expand_dims(features, axis=0)
-            features = features[0]
             print(features)
 
             v = 0
 
             similar_images = []
 
-            print(len(images))
-            ann_results = index.get_nns_by_vector(features, 2)
-            for ann_result in ann_results:
-                file_name = images[ann_result]
-                similar_images.append(
-                    {"name": file_name, "similarity": float(1)})
-            # print(results)
-            # print(images[results[0]])
-            # print(images[results[1]])
+            image_count = 0
+            for key, value in vectors.items():
 
-            result["images"] = similar_images
+                image_count += 1
+
+                value = np.expand_dims(value, axis=0)
+                res = model.predict([features, value])
+
+                res = res[0]
+                # print(res)
+
+                v = res[1]
+                file_name = key
+                if not similar_images:
+                    similar_images.append(
+                        {"name": file_name, "similarity": float(v)})
+                else:
+                    if v > similar_images[-1]["similarity"]:
+                        for idx, val in enumerate(similar_images):
+                            if v > val["similarity"]:
+                                if len(similar_images) == 9:
+                                    similar_images.pop()
+                                similar_images.insert(idx,
+                                                      {"name": file_name, "similarity": float(v)})
+                                break
+
+                if image_count > 50:
+                    result["images"] = list(similar_images)
+                    db_redis.setex(
+                        "result:"+result["id"], 60, json.dumps(result))
+
+            result["images"] = list(similar_images)
             print(result)
             db_redis.setex("result:"+result["id"], 60, json.dumps(result))
 

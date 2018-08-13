@@ -98,7 +98,7 @@ def status(image_id):
 @app.route("/result/images/<path:file_name>", methods=["GET"])
 def image(file_name):
 
-    path_folder = os.path.join(app.root_path, "data/holiday-photos/image/jpg")
+    path_folder = os.path.join(app.root_path, "/home/andrei/temp/validation/")
     return flask.send_from_directory(directory=path_folder, filename=file_name)
 
 
