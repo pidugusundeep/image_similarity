@@ -33,6 +33,17 @@ https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-18-04-bionic
 
 (Image forensic )[https://arxiv.org/pdf/1802.06515.pdf]
 
+### LSH
+
+https://www.quora.com/What-are-some-fast-similarity-search-algorithms-and-data-structures-for-high-dimensional-vectors
+https://towardsdatascience.com/fast-near-duplicate-image-search-using-locality-sensitive-hashing-d4c16058efcb
+
+
+### Google Image
+
+https://www.quora.com/What-is-the-algorithm-used-by-Googles-reverse-image-search-i-e-search-by-image-What-algorithms-would-I-need-to-understand-to-create-similar-functionality-on-a-small-scale
+
+
 ### Dataset
 https://sites.google.com/site/imagesimilaritydata/download
 
