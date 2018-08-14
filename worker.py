@@ -143,7 +143,7 @@ def main():
             similar_images = []
 
             print(len(images))
-            ann_results = index.get_nns_by_vector(features, 2)
+            ann_results = index.get_nns_by_vector(features, 10)
             for ann_result in ann_results:
                 file_name = images[ann_result]
                 similar_images.append(
