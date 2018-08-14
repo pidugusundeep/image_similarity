@@ -45,5 +45,6 @@ https://www.quora.com/What-is-the-algorithm-used-by-Googles-reverse-image-search
 
 
 ### Dataset
+https://github.com/openimages/dataset
 https://sites.google.com/site/imagesimilaritydata/download
 
