@@ -48,3 +48,6 @@ https://www.quora.com/What-is-the-algorithm-used-by-Googles-reverse-image-search
 https://github.com/openimages/dataset
 https://sites.google.com/site/imagesimilaritydata/download
 
+https://research.google.com/youtube-bb/download.html   (Video)
+
+
