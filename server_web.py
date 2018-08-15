@@ -85,12 +85,32 @@ def search():
 @app.route("/result/<string:image_id>", methods=["GET"])
 def status(image_id):
 
-    data = db.get("result:"+image_id)
+    result_0 = db.get("result:"+image_id+":"+"image_0")
+    result_1 = db.get("result:"+image_id+":"+"image_1")
 
-    if not data:
+    if not result_0 and not result_1:
         return flask.jsonify({})
 
-    data = json.loads(data.decode("utf-8"))
+    result_list = []
+
+    if result_0:
+        result_0 = json.loads(result_0.decode("utf-8"))
+        # print(result_0)
+        result_list.extend(result_0["images"])
+
+    if result_1:
+        result_1 = json.loads(result_1.decode("utf-8"))
+        result_list.extend(result_1["images"])
+
+    #print(result_list)
+
+    result_list = sorted(result_list, key=lambda k: k["distance"])
+
+    result_list=result_list[:15]
+
+    data = {}
+    data["id"] = image_id
+    data["images"] = result_list
 
     return flask.jsonify(data)
 
@@ -98,7 +118,7 @@ def status(image_id):
 @app.route("/result/images/<path:file_name>", methods=["GET"])
 def image(file_name):
 
-    path_folder = os.path.join(app.root_path, "/home/andrei/temp/validation/")
+    path_folder = os.path.join(app.root_path, "/home/andrei/temp/")
     return flask.send_from_directory(directory=path_folder, filename=file_name)
 
 

@@ -76,7 +76,7 @@
                                 $('#resultImages').empty()
 
                                 data["images"].forEach(function (item) {
-                                    $('#resultImages').append('<img src="/result/images/' + item.name + '" width="256" height="256"  />:' + item.similarity)
+                                    $('#resultImages').append('<img src="/result/images/' + item.name + '" width="256" height="256"  />:' + item.distance)
                                 })
 
                             }

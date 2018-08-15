@@ -2,5 +2,10 @@
 
 
 data/holiday-photos/**
-data/vectors.tsv
-data/model.h5
+data/*.tsv
+data/*.h5
+data/*.ann
+data/*.csv
+
+
+

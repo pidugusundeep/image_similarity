@@ -94,34 +94,12 @@ def get_inception3():
 def main():
     """ main function """
 
-    print("Load vectors.")
-    vectors = load_vectors("data/vectors.tsv")
-
     print("Load features model.")
-    #base_model = ResNet50(weights='imagenet', include_top=True)
-    # features_model = Model(inputs=base_model.input,
-    #              outputs=base_model.get_layer("flatten_1").output)
     features_model, preprocessor = get_inception3()
 
-    print("Load model.", end="")
-    model = load_model('data/model.h5')
-    print("Ok")
-    print("Load ann model.", end="")
-    index = AnnoyIndex(2048)
-    index.load("data/model.ann")
-    print("Ok")
-
-    print("Load index metadata.", end="")
-    image_names = os.listdir("/home/andrei/temp/validation")
-    image_names.sort()
-    images = []
-    for image_name in image_names:
-        images.append(image_name)
-    print("Ok.")
-
-    db_redis = redis.StrictRedis(host="localhost", port=6379, db=0)
+    db = redis.StrictRedis(host="localhost", port=6379, db=0)
     while True:
-        data = db_redis.brpop(IMAGE_QUEUE_LIST, timeout=5)
+        data = db.brpop(IMAGE_QUEUE_LIST, timeout=5)
 
         # print(data)
         if data:
@@ -136,25 +114,15 @@ def main():
 
             features = np.expand_dims(features, axis=0)
             features = features[0]
-            print(features)
+            #print(features[0])
 
-            v = 0
+            features = features.tolist()
+            #print(features[0])
 
-            similar_images = []
-
-            print(len(images))
-            ann_results = index.get_nns_by_vector(features, 10)
-            for ann_result in ann_results:
-                file_name = images[ann_result]
-                similar_images.append(
-                    {"name": file_name, "similarity": float(1)})
-            # print(results)
-            # print(images[results[0]])
-            # print(images[results[1]])
-
-            result["images"] = similar_images
-            print(result)
-            db_redis.setex("result:"+result["id"], 60, json.dumps(result))
+            result["features"] = features
+            result_json = json.dumps(result)
+            db.lpush("image_0_index_queue", result_json)
+            db.lpush("image_1_index_queue", result_json)
 
 
 if __name__ == "__main__":
