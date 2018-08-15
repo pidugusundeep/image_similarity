@@ -1,7 +1,7 @@
 """ worker to process image """
 
 import json
-import sys
+import os
 
 import cv2
 import numpy as np
@@ -29,9 +29,6 @@ def extract_features(model, preprocessor, image_path):
     features = features.squeeze()
 
     return features
-
-
-
 
 
 def get_inception3():
@@ -88,6 +85,8 @@ def main():
             result_json = json.dumps(result)
             db.lpush("image_0_index_queue", result_json)
             db.lpush("image_1_index_queue", result_json)
+
+            os.remove(data["image"])
 
 
 if __name__ == "__main__":
