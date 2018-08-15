@@ -56,23 +56,16 @@ def search():
 
     if flask.request.method == "POST":
         if flask.request.files.get("image"):
-            image_data = flask.request.files["image"].read()
-
-            img_stream = io.BytesIO(image_data)
-
-            file_bytes = np.asarray(
-                bytearray(img_stream.read()), dtype=np.uint8)
-            image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-
-            image_height = image.shape[0]
-            image_width = image.shape[1]
-
-            #print(image_height, image_width)
-            print(image.dtype)
+            file = flask.request.files["image"]
 
             id_image = str(uuid.uuid4())
-            d = {"id": id_image, "image": base64_encode_image(
-                image_data)}
+            ext=file.filename.rsplit('.',1)[1]
+            temp_path=os.path.join("temp",id_image+"."+ext)
+            file.save(temp_path)
+
+            
+
+            d = {"id": id_image, "image": temp_path}
 
             db.lpush(IMAGE_QUEUE_LIST, json.dumps(d))
             data["queue"] = True
