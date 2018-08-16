@@ -14,6 +14,7 @@
     <br>
     <div>
         <img id="previewImage" src="#" alt="your image" width="256" height="256" />
+        <video id="previewVideo" src="#" alt="your image" width="256" height="256" />
     </div>
     <div>
         <div id="result"></div>
@@ -22,15 +23,27 @@
 </body>
 
 <script>
-
+    $('#previewVideo').hide();
+    $('#previewImage').hide();
 
     function readURL(input) {
 
         if (input.files && input.files[0]) {
             var reader = new FileReader();
 
+
+
             reader.onload = function (e) {
-                $('#previewImage').attr('src', e.target.result);
+                if (input.files[0].name.endsWith("webm") || input.files[0].name.endsWith("mp4")) {
+                    $('#previewVideo').show();
+                    $('#previewImage').hide();
+                    $('#previewVideo').attr('src', e.target.result);
+
+                } else {
+                    $('#previewVideo').hide();
+                    $('#previewImage').show();
+                    $('#previewImage').attr('src', e.target.result);
+                }
             }
 
             reader.readAsDataURL(input.files[0]);
@@ -65,7 +78,9 @@
 
                     id = data["id"]
 
-                    setInterval(function () {
+
+
+                    var interval = setInterval(function () {
 
                         //$('#result').text(data["id"] + new Date())
 
@@ -73,11 +88,27 @@
                             url: "/result/" + id,
                             method: "get",
                             success: function (data) {
+
+
+                                if (typeof data["images"] == 'undefined' || data["images"].length == 0) {
+                                    return;
+                                }
+
                                 $('#resultImages').empty()
 
                                 data["images"].forEach(function (item) {
-                                    $('#resultImages').append('<img src="/result/images/' + item.name + '" width="256" height="256"  />:' + item.distance)
+
+
+                                    if (item.name.endsWith("webm") || item.name.endsWith("mp4")) {
+                                        $('#resultImages').append('<video width="256" height="256" src="/result/images/' + item.name + '"  controls />:' + item.distance.toFixed(2))
+
+                                    } else {
+                                        $('#resultImages').append('<img src="/result/images/' + item.name + '" width="256" height="256"  />:' + item.distance.toFixed(2))
+                                    }
+
                                 })
+
+                                clearInterval(interval)
 
                             }
                         })

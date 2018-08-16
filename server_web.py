@@ -59,11 +59,9 @@ def search():
             file = flask.request.files["image"]
 
             id_image = str(uuid.uuid4())
-            ext=file.filename.rsplit('.',1)[1]
-            temp_path=os.path.join("temp",id_image+"."+ext)
+            ext = file.filename.rsplit('.', 1)[1]
+            temp_path = os.path.join("temp", id_image+"."+ext)
             file.save(temp_path)
-
-            
 
             d = {"id": id_image, "image": temp_path}
 
@@ -78,13 +76,18 @@ def search():
 @app.route("/result/<string:image_id>", methods=["GET"])
 def status(image_id):
 
+    data = {}
+    data["id"] = image_id
+    result_list = []
+
     result_0 = db.get("result:"+image_id+":"+"image_0")
     result_1 = db.get("result:"+image_id+":"+"image_1")
+    result_2 = db.get("result:"+image_id+":"+"image_2")
+    result_3 = db.get("result:"+image_id+":"+"video_0")
 
-    if not result_0 and not result_1:
-        return flask.jsonify({})
-
-    result_list = []
+    if not result_0 or not result_1 or not result_2 or not result_3:
+        data["images"] = result_list
+        return flask.jsonify(data)
 
     if result_0:
         result_0 = json.loads(result_0.decode("utf-8"))
@@ -95,14 +98,20 @@ def status(image_id):
         result_1 = json.loads(result_1.decode("utf-8"))
         result_list.extend(result_1["images"])
 
-    #print(result_list)
+    if result_2:
+        result_2 = json.loads(result_2.decode("utf-8"))
+        result_list.extend(result_2["images"])
+
+    if result_3:
+        result_3 = json.loads(result_3.decode("utf-8"))
+        result_list.extend(result_3["images"])
+
+    # print(result_list)
 
     result_list = sorted(result_list, key=lambda k: k["distance"])
 
-    result_list=result_list[:15]
+    result_list = result_list[:15]
 
-    data = {}
-    data["id"] = image_id
     data["images"] = result_list
 
     return flask.jsonify(data)

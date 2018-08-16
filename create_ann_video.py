@@ -1,4 +1,6 @@
 import os
+import sys
+import csv
 
 import cv2
 import numpy as np
@@ -45,9 +47,13 @@ def image_batch_generator(image_names, batch_size):
 # main function
 def main():
 
+    input_dir = sys.argv[1]
+    output_dir = sys.argv[2]
+    model_name = sys.argv[3]
+
     index = AnnoyIndex(FEATURES_COUNT)
 
-    videos = os.listdir(VIDEO_DIR)
+    videos = os.listdir(input_dir)
 
     videos.sort()
 
@@ -58,13 +64,13 @@ def main():
         print("Process "+video)
         images = []
         vector = np.zeros(FEATURES_COUNT, dtype="float32")
-        cap = cv2.VideoCapture(os.path.join(VIDEO_DIR, video))
+        cap = cv2.VideoCapture(os.path.join(input_dir, video))
         while(cap.isOpened()):
             ret, frame = cap.read()
             if ret:
                 frame = cv2.resize(frame, (IMAGE_SIZE, IMAGE_SIZE))
                 images.append(frame)
-                #print(len(images))
+                # print(len(images))
                 if(len(images) == BATCH_SIZE):
                     x_data = preprocessor(
                         np.array(images, dtype="float32"))
@@ -85,7 +91,12 @@ def main():
 
     print("{:d} vectors generated".format(num_vectors))
     index.build(10)  # 10 trees
-    index.save('data/model_video.ann')
+    index.save(os.path.join(output_dir, model_name+".ann"))
+
+    with open(os.path.join(output_dir, model_name+".csv"), mode='w') as filep:
+        writer = csv.writer(filep, delimiter=',')
+        for video in videos:
+            writer.writerow([os.path.join(input_dir, video)])
 
 
 if __name__ == "__main__":
