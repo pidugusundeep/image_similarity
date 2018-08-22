@@ -80,31 +80,20 @@ def status(image_id):
     data["id"] = image_id
     result_list = []
 
-    result_0 = db.get("result:"+image_id+":"+"image_0")
-    result_1 = db.get("result:"+image_id+":"+"image_1")
-    result_2 = db.get("result:"+image_id+":"+"image_2")
-    result_3 = db.get("result:"+image_id+":"+"video_0")
+    indexes = ["image_0", "image_1", "image_2",
+               "image_3", "image_4","image_5","image_6","image_7", "validation", "video_1"]
 
-    if not result_0 or not result_1 or not result_2 or not result_3:
-        data["images"] = result_list
-        return flask.jsonify(data)
+    results = []
+    for index in indexes:
+        result = db.get("result:"+image_id+":"+index)
+        if not result:
+            data["images"] = result_list
+            return flask.jsonify(data)
+        results.append(result)
 
-    if result_0:
-        result_0 = json.loads(result_0.decode("utf-8"))
-        # print(result_0)
-        result_list.extend(result_0["images"])
-
-    if result_1:
-        result_1 = json.loads(result_1.decode("utf-8"))
-        result_list.extend(result_1["images"])
-
-    if result_2:
-        result_2 = json.loads(result_2.decode("utf-8"))
-        result_list.extend(result_2["images"])
-
-    if result_3:
-        result_3 = json.loads(result_3.decode("utf-8"))
-        result_list.extend(result_3["images"])
+    for result in results:
+        r = json.loads(result.decode("utf-8"))
+        result_list.extend(r["images"])
 
     # print(result_list)
 
@@ -120,7 +109,7 @@ def status(image_id):
 @app.route("/result/images/<path:file_name>", methods=["GET"])
 def image(file_name):
 
-    path_folder = os.path.join(app.root_path, "/home/andrei/temp/")
+    path_folder = os.path.join(app.root_path, "/media/hdd1t/images/")
     return flask.send_from_directory(directory=path_folder, filename=file_name)
 
 

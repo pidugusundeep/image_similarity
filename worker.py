@@ -119,10 +119,12 @@ def main():
             result["features"] = features
             result_json = json.dumps(result)
             
-            db.lpush("video_0_index_queue", result_json)
-            db.lpush("image_0_index_queue", result_json)
-            db.lpush("image_1_index_queue", result_json)
-            db.lpush("image_2_index_queue", result_json)
+            indexes = ["image_0", "image_1", "image_2",
+               "image_3", "image_4","image_5","image_6","image_7", "validation", "video_1"]
+
+            for index in indexes:
+                db.lpush(index+"_index_queue", result_json)
+            
             print("forward to search in index "+data["id"])
 
             os.remove(media_path)

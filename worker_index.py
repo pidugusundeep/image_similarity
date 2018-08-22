@@ -66,7 +66,7 @@ def main():
                     {"name": file_name, "distance": distance})
 
             result["images"] = similar_images
-            print(result)
+            #print(result)
             db_redis.setex(
                 "result:"+result["id"]+":"+index_name, 160, json.dumps(result))
 

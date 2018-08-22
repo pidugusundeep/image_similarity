@@ -67,13 +67,19 @@ def main():
 
     model, preprocessor = get_inception3()
 
+    images_add = []
+
     num_vectors = 0
     for image_batch in image_batch_generator(image_names, BATCH_SIZE):
         batch_images = []
         for image_name in image_batch:
             # print(image_name)
             image = cv2.imread(os.path.join(input_dir, image_name))
+            if image is None:
+                continue
+
             image = cv2.resize(image, (IMAGE_SIZE, IMAGE_SIZE))
+            images_add.append(image_name)
             batch_images.append(image)
 
         x_data = preprocessor(np.array(batch_images, dtype="float32"))
@@ -97,7 +103,7 @@ def main():
 
     with open(os.path.join(output_dir, model_name+".csv"), mode='w') as filep:
         writer = csv.writer(filep, delimiter=',')
-        for image_name in image_names:
+        for image_name in images_add:
             writer.writerow([os.path.join(input_dir, image_name)])
 
 

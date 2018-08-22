@@ -60,6 +60,9 @@ def main():
     model, preprocessor = get_inception3()
 
     num_vectors = 0
+
+    videos_added=[]
+
     for video in videos:
         print("Process "+video)
         images = []
@@ -85,6 +88,7 @@ def main():
         cap.release()
 
         index.add_item(num_vectors, vector)
+        videos_added.append(video)
         num_vectors += 1
         if num_vectors % 100 == 0:
             print("{:d} vectors generated".format(num_vectors))
@@ -95,7 +99,7 @@ def main():
 
     with open(os.path.join(output_dir, model_name+".csv"), mode='w') as filep:
         writer = csv.writer(filep, delimiter=',')
-        for video in videos:
+        for video in videos_added:
             writer.writerow([os.path.join(input_dir, video)])
 
 
