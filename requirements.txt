@@ -8,3 +8,10 @@ redis
 flask
 annoy
 pytube
+scipy
+hmmlearn
+simplejson
+eyed3
+pydub
+git+https://github.com/tyiannak/pyAudioAnalysis.git
+ffmpeg-python

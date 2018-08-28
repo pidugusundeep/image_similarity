@@ -38,6 +38,13 @@ https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-18-04-bionic
 https://www.quora.com/What-are-some-fast-similarity-search-algorithms-and-data-structures-for-high-dimensional-vectors
 https://towardsdatascience.com/fast-near-duplicate-image-search-using-locality-sensitive-hashing-d4c16058efcb
 
+### Audio Finger print
+http://willdrevo.com/fingerprinting-and-audio-recognition-with-python/
+
+LSH - https://towardsdatascience.com/locality-sensitive-hashing-for-music-search-f2f1940ace23
+https://www.tandfonline.com/doi/full/10.1080/24751839.2018.1423790
+
+
 
 ### Google Image
 

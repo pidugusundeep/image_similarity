@@ -81,7 +81,7 @@ def status(image_id):
     result_list = []
 
     indexes = ["image_0", "image_1", "image_2",
-               "image_3", "image_4","image_5","image_6","image_7", "validation", "video_1"]
+               "image_3", "image_4","image_5","image_6","image_7","image_8", "validation", "video_1"]
 
     results = []
     for index in indexes:
