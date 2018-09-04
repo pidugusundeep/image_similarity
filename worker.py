@@ -4,10 +4,14 @@ import json
 import os
 
 import cv2
+import ffmpeg
 import numpy as np
 import redis
 from keras.applications import inception_v3
 from keras.models import Model
+from scipy.io import wavfile
+from vggish import vggish
+from vggish.preprocess_sound import preprocess_sound
 
 IMAGE_QUEUE_LIST = "image_queue"
 
@@ -61,6 +65,47 @@ def extract_features_from_video(model, preprocessor, video_path):
     return vector
 
 
+def extract_sound_features_from_video(model, preprocessor, video_path):
+    """ process data """
+
+    print(video_path)
+
+    stream = ffmpeg.input(video_path)
+    wav_path = video_path+".wav"
+    stream = ffmpeg.output(stream, wav_path, ac=1)
+    stream = stream.overwrite_output()
+    ffmpeg.run(stream)
+
+    sr, wav_data = wavfile.read(wav_path)
+    os.remove(wav_path)
+
+    length = sr * 60
+
+    cur_wav = wav_data[0:length]
+    cur_spectro = preprocessor(cur_wav, sr)
+    cur_wav = cur_wav / 32768.0
+    # print(cur_spectro.shape)
+    cur_spectro = np.expand_dims(cur_spectro, 3)
+    # print(cur_spectro.shape)
+
+    result = model.predict(cur_spectro)
+    result = np.sum(result, axis=0)
+
+    return result
+
+
+def get_vggish():
+    """ return inception3 model and preprocessor """
+
+    vggish_model = vggish.VGGish(
+        weights="audioset", include_top=True)
+
+    model = Model(inputs=vggish_model.input,
+                  outputs=vggish_model.get_layer("vggish_fc2").output)
+
+    return model, preprocess_sound
+
+
 def get_inception3():
     """ return inception3 model and preprocessor """
 
@@ -88,6 +133,7 @@ def main():
 
     print("Load features model.")
     features_model, preprocessor = get_inception3()
+    sound_features_model, sound_preprocessor = get_vggish()
 
     db = redis.StrictRedis(host="localhost", port=6379, db=0)
     while True:
@@ -105,6 +151,9 @@ def main():
             if media_path.split(".")[-1] in ["webm", "mp4"]:
                 features = extract_features_from_video(
                     features_model, preprocessor, media_path)
+                features_audio = extract_sound_features_from_video(
+                    sound_features_model, sound_preprocessor, media_path)
+
             else:
                 features = extract_features(
                     features_model, preprocessor, media_path)

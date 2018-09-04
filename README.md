@@ -43,6 +43,24 @@ http://willdrevo.com/fingerprinting-and-audio-recognition-with-python/
 
 LSH - https://towardsdatascience.com/locality-sensitive-hashing-for-music-search-f2f1940ace23
 https://www.tandfonline.com/doi/full/10.1080/24751839.2018.1423790
+Spectogram + CNN https://medium.com/iotforall/sound-classification-with-tensorflow-8209bdb03dfb
+Spcetogram + CNN https://yerevann.github.io/2015/10/11/spoken-language-identification-with-deep-convolutional-networks/
+Spectogram + CNN https://github.com/edatta/PopMusicCNN/blob/master/PopMusicEraCNN.ipynb
+Spectogram + CNN https://benanne.github.io/2014/08/05/spotify-cnns.html
+Spectogram + CNN http://www.mdpi.com/2076-3417/8/1/150/pdf
+Spectogram + CNN https://github.com/awjuliani/sound-cnn
+
+MEL GRAM   https://github.com/chen0040/keras-audio/blob/master/keras_audio/library/utility/audio_utils.py
+
+https://www.kdnuggets.com/2017/12/audio-classifier-deep-neural-networks.html
+
+Classify audio : https://github.com/chen0040/keras-audio
+
+http://deepsound.io/music_genre_recognition.html
+
+https://github.com/DTaoo/VGGish
+
+
 
 
 
