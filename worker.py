@@ -79,7 +79,7 @@ def extract_sound_features_from_video(model, preprocessor, video_path):
     sr, wav_data = wavfile.read(wav_path)
     os.remove(wav_path)
 
-    length = sr * 60
+    length = sr * 20
 
     cur_wav = wav_data[0:length]
     cur_spectro = preprocessor(cur_wav, sr)
@@ -148,7 +148,8 @@ def main():
 
             print("Extract features "+data["id"])
             media_path = data["image"]
-            if media_path.split(".")[-1] in ["webm", "mp4"]:
+            media_type = data["media_type"]
+            if media_type == "movie":
                 features = extract_features_from_video(
                     features_model, preprocessor, media_path)
                 features_audio = extract_sound_features_from_video(
@@ -168,11 +169,29 @@ def main():
             result["features"] = features
             result_json = json.dumps(result)
 
-            indexes = ["image_0", "image_1", "image_2",
-                       "image_3", "image_4", "image_5", "image_6", "image_7", "image_8", "validation", "video_1"]
+            index_image = ["image_0", "image_1", "image_2",
+                           "image_3", "image_4", "image_5", "image_6", "image_7", "image_8", "validation", "video_1"]
+            index_video = ["video_1"]
+            index_audio = ["audio_0"]
 
-            for index in indexes:
-                db.lpush(index+"_index_queue", result_json)
+            if media_type == "image":
+                for index in index_image:
+                    db.lpush(index+"_index_queue", result_json)
+            else:
+                for index in index_video:
+                    db.lpush(index+"_index_queue", result_json)
+                
+                result["id"] = data["id"]
+                features_audio = np.expand_dims(features_audio, axis=0)
+                features_audio = features_audio[0]
+                # print(features[0])
+
+                features_audio = features_audio.tolist()
+                result["features"] = features_audio
+                result_json = json.dumps(result)
+
+                for index in index_audio:
+                    db.lpush(index+"_index_queue", result_json)
 
             print("forward to search in index "+data["id"])
 

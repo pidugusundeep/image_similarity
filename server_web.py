@@ -63,8 +63,14 @@ def search():
             temp_path = os.path.join("temp", id_image+"."+ext)
             file.save(temp_path)
 
-            d = {"id": id_image, "image": temp_path}
+            if ext in ["webm", "mp4"]:
+                media_type = "movie"
+            else:
+                media_type = "image"
 
+            d = {"id": id_image, "image": temp_path, "media_type": media_type}
+
+            db.setex("query:"+d["id"], 160, json.dumps(d))
             db.lpush(IMAGE_QUEUE_LIST, json.dumps(d))
             data["queue"] = True
             data["id"] = id_image
@@ -80,16 +86,37 @@ def status(image_id):
     data["id"] = image_id
     result_list = []
 
-    indexes = ["image_0", "image_1", "image_2",
-               "image_3", "image_4","image_5","image_6","image_7","image_8", "validation", "video_1"]
+    index_image = ["image_0", "image_1", "image_2",
+                    "image_3", "image_4", "image_5", "image_6", "image_7", "image_8", "validation"]
+    index_video = ["video_1"]
+    index_audio = ["audio_0"]
 
+    query = json.loads(db.get("query:"+image_id).decode("utf-8"))
+    print("Status query:"+query["id"]+" media_type:"+query["media_type"])
     results = []
-    for index in indexes:
-        result = db.get("result:"+image_id+":"+index)
-        if not result:
-            data["images"] = result_list
-            return flask.jsonify(data)
-        results.append(result)
+    if query["media_type"] == "image":
+        for idx in index_image:
+            result = db.get("result:"+image_id+":"+idx)
+            if not result:
+                data["images"] = result_list
+                return flask.jsonify(data)
+            results.append(result)
+    else:
+        print("a1")
+        for idx in index_video:
+            result = db.get("result:"+image_id+":"+idx)
+            if not result:
+                data["images"] = result_list
+                return flask.jsonify(data)
+            results.append(result)
+        print("a2") 
+        for idx in index_audio:
+            result = db.get("result:"+image_id+":"+idx)
+            if not result:
+                data["images"] = result_list
+                return flask.jsonify(data)
+            results.append(result)
+        print("a3")
 
     for result in results:
         r = json.loads(result.decode("utf-8"))
@@ -99,7 +126,7 @@ def status(image_id):
 
     result_list = sorted(result_list, key=lambda k: k["distance"])
 
-    result_list = result_list[:15]
+    result_list = result_list[: 15]
 
     data["images"] = result_list
 

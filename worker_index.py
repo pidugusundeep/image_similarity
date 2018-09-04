@@ -23,7 +23,7 @@ def main():
     metadata_path = os.path.join(dir_name, index_name+".csv")
 
     print("Load ann model {}. ".format(ann_path), end="")
-    index = AnnoyIndex(2048)
+    index = AnnoyIndex(128)
     index.load(ann_path)
     print("Ok.")
 
@@ -49,7 +49,7 @@ def main():
             result["id"] = data["id"]
 
             features = data["features"]
-            # print(features[0])
+            #print(features.shape)
 
             ann_results = index.get_nns_by_vector(
                 features, 10, include_distances=True)
