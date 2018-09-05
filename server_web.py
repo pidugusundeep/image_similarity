@@ -102,21 +102,25 @@ def status(image_id):
                 return flask.jsonify(data)
             results.append(result)
     else:
-        print("a1")
+        #print("a1")
         for idx in index_video:
             result = db.get("result:"+image_id+":"+idx)
             if not result:
                 data["images"] = result_list
                 return flask.jsonify(data)
             results.append(result)
-        print("a2") 
+        #print("a2")
+        results_audio=[] 
         for idx in index_audio:
             result = db.get("result:"+image_id+":"+idx)
             if not result:
                 data["images"] = result_list
                 return flask.jsonify(data)
-            results.append(result)
-        print("a3")
+            results_audio.append(result)
+        #print("a3")
+        
+
+    
 
     for result in results:
         r = json.loads(result.decode("utf-8"))
