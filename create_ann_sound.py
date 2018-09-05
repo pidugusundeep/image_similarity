@@ -63,7 +63,7 @@ def main():
         sr, wav_data = wavfile.read(wav_path)
         os.remove(wav_path)
 
-        length = sr * 20
+        length = sr * 120
 
         # print(length)
 

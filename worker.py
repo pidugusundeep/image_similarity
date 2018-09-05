@@ -69,7 +69,6 @@ def extract_sound_features_from_video(model, preprocessor, video_path):
     """ process data """
 
     print(video_path)
-
     stream = ffmpeg.input(video_path)
     wav_path = video_path+".wav"
     stream = ffmpeg.output(stream, wav_path, ac=1)
@@ -79,7 +78,7 @@ def extract_sound_features_from_video(model, preprocessor, video_path):
     sr, wav_data = wavfile.read(wav_path)
     os.remove(wav_path)
 
-    length = sr * 20
+    length = sr * 120
 
     cur_wav = wav_data[0:length]
     cur_spectro = preprocessor(cur_wav, sr)
@@ -178,8 +177,8 @@ def main():
                 for index in index_image:
                     db.lpush(index+"_index_queue", result_json)
             else:
-                for index in index_video:
-                    db.lpush(index+"_index_queue", result_json)
+                #for index in index_video:
+                #    db.lpush(index+"_index_queue", result_json)
                 
                 result["id"] = data["id"]
                 features_audio = np.expand_dims(features_audio, axis=0)
