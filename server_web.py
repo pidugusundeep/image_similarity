@@ -88,7 +88,7 @@ def status(image_id):
 
     index_image = ["image_0", "image_1", "image_2",
                     "image_3", "image_4", "image_5", "image_6", "image_7", "image_8", "validation"]
-    index_video = ["video_1"]
+    index_video = ["video_0"]
     index_audio = ["audio_0"]
 
     query = json.loads(db.get("query:"+image_id).decode("utf-8"))
@@ -103,21 +103,15 @@ def status(image_id):
             results.append(result)
     else:
         #print("a1")
-        #for idx in index_video:
-        #    result = db.get("result:"+image_id+":"+idx)
-        #    if not result:
-        #        data["images"] = result_list
-        #        return flask.jsonify(data)
-        #    results.append(result)
-        #print("a2")
-        #results_audio=[] 
-        for idx in index_audio:
+        for idx in index_video:
             result = db.get("result:"+image_id+":"+idx)
             if not result:
                 data["images"] = result_list
                 return flask.jsonify(data)
             results.append(result)
-        #print("a3")
+        
+        
+        
         
 
     

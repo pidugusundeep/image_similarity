@@ -76,3 +76,12 @@ https://sites.google.com/site/imagesimilaritydata/download
 https://research.google.com/youtube-bb/download.html   (Video)
 
 
+
+
+
+### Content Id
+
+
+https://www.theaustralian.com.au/business/technology/youtube-protects-copyright-with-artificial-intelligence/news-story/3ec6616cf5325bdda820659c7fc491df
+
+

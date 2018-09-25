@@ -1,0 +1,8 @@
+keras
+tensorflow-gpu
+matplotlib
+Pillow
+opencv-python
+ffmpeg-python
+librosa
+git+https://github.com/andreidore/VGGish.git

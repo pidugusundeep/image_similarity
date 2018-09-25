@@ -23,7 +23,8 @@ def main():
     metadata_path = os.path.join(dir_name, index_name+".csv")
 
     print("Load ann model {}. ".format(ann_path), end="")
-    index = AnnoyIndex(128)
+    #index = AnnoyIndex(2176)
+    index = AnnoyIndex(2048)
     index.load(ann_path)
     print("Ok.")
 
